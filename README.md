@@ -30,10 +30,10 @@ docker exec -it <название_php_контейнера> /bin/sh
 Сборка использует переменные окружения, которые берутся из .env-файла, поэтому перед началом работы необходимо создать данный файл
 
 ### После сборки образа необходимо запустить composer для получения сторонних пакетов. 
-docker exec -it factoring_php composer --ignore-platform-reqs --no-scripts install
+docker exec -it <название_php_контейнера> composer --ignore-platform-reqs --no-scripts install
 
 ### И команда для установки только зависимостей для production
-docker exec -it factoring_php composer --ignore-platform-reqs --no-scripts install --no-dev
+docker exec -it <название_php_контейнера> composer --ignore-platform-reqs --no-scripts install --no-dev
 
 # Дополнитель установленные пакеты
 ### wkhtmltopdf и набор шрифтов к нему для использования при генерации pdf с помощью пакета [https://github.com/barryvdh/laravel-snappy](https://github.com/barryvdh/laravel-snappy)
