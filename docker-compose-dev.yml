@@ -1,0 +1,91 @@
+version: '3'
+
+services:
+  php:
+    container_name: ${APP_NAME}_php
+    build:
+      context: docker/php-fpm
+    volumes:
+      - ./:/var/www:delegated
+      - ./docker/php-fpm/supervisord.conf:/etc/supervisord.conf
+    environment:
+      - CONTAINER_ROLE=php-fpm
+      - APP_ENV=${APP_ENV}
+    depends_on:
+      - database
+      - redis
+    networks:
+      - factoring
+
+  redis:
+    container_name: ${APP_NAME}_redis
+    image: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+    networks:
+      - factoring
+
+  nginx:
+    container_name: ${APP_NAME}_nginx
+    build:
+      context: docker/nginx
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    ports:
+      - 80:80
+    depends_on:
+      - php
+    networks:
+      - factoring
+
+  database:
+    container_name: ${APP_NAME}_database
+    image: postgres:12
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASS: ${DB_PASSWORD}
+      POSTGRES_DBNAME: ${DB_DATABASE}
+    volumes:
+      - ./docker/postgres/datadir:/var/lib/postgresql/data
+    networks:
+      - factoring
+
+  scheduler:
+    build:
+      context: ./docker/php-fpm
+      dockerfile: Dockerfile
+    container_name: ${APP_NAME}_scheduler
+    depends_on:
+      - php
+    volumes:
+      - ./:/var/www
+    environment:
+      - CONTAINER_ROLE=scheduler
+      - APP_ENV=${APP_ENV}
+    restart: always
+
+  worker:
+    build:
+      context: ./docker/php-fpm
+      dockerfile: Dockerfile
+    container_name: ${APP_NAME}_worker
+    depends_on:
+      - php
+    volumes:
+      - ./:/var/www
+    environment:
+      - CONTAINER_ROLE=worker
+      - APP_ENV=${APP_ENV}
+    restart: always
+networks:
+  factoring:
+    driver: bridge
+volumes:
+  redis:
+    driver: "local"
