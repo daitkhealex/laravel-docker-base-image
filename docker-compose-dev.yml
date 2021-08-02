@@ -4,10 +4,9 @@ services:
   php:
     container_name: ${APP_NAME}_php
     build:
-      context: docker/php-fpm
+      context: docker/php
     volumes:
       - ./:/var/www:delegated
-      - ./docker/php-fpm/supervisord.conf:/etc/supervisord.conf
     environment:
       - CONTAINER_ROLE=php-fpm
       - APP_ENV=${APP_ENV}
@@ -15,7 +14,7 @@ services:
       - database
       - redis
     networks:
-      - factoring
+      - application
 
   redis:
     container_name: ${APP_NAME}_redis
@@ -25,7 +24,7 @@ services:
     volumes:
       - redis:/data
     networks:
-      - factoring
+      - application
 
   nginx:
     container_name: ${APP_NAME}_nginx
@@ -39,7 +38,7 @@ services:
     depends_on:
       - php
     networks:
-      - factoring
+      - application
 
   database:
     container_name: ${APP_NAME}_database
@@ -54,13 +53,15 @@ services:
     volumes:
       - ./docker/postgres/datadir:/var/lib/postgresql/data
     networks:
-      - factoring
+      - application
 
   scheduler:
     build:
-      context: ./docker/php-fpm
+      context: ./docker/php
       dockerfile: Dockerfile
     container_name: ${APP_NAME}_scheduler
+    networks:
+      - application
     depends_on:
       - php
     volumes:
@@ -72,19 +73,23 @@ services:
 
   worker:
     build:
-      context: ./docker/php-fpm
+      context: ./docker/php
       dockerfile: Dockerfile
     container_name: ${APP_NAME}_worker
+    networks:
+      - application
     depends_on:
       - php
+      - redis
     volumes:
       - ./:/var/www
+      - ./docker/php/supervisord.conf:/etc/supervisord.conf
     environment:
       - CONTAINER_ROLE=worker
       - APP_ENV=${APP_ENV}
     restart: always
 networks:
-  factoring:
+  application:
     driver: bridge
 volumes:
   redis:
