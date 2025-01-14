@@ -1,39 +1,43 @@
-# Руководство по работе со сборкой docker для Laravel
+# The build is designed to work in development mode
 
-### Сборка состоит из следующих контейнеров
+### The build consists of the following containers
 
-- php (используется образ php:7.4-fpm)
-- redis (используется образ redis)
-- nginx (используется образ nginx)
-- postgres (используется образ postgres:12 без дополнительных модулей)
-- scheduler (для запуска выполнения cron-задач в системе)
-- worker (для запуска job-ов)
+- php (php:8.4-fpm image is used)
+- redis (redis image is used)
+- nginx (nginx image is used)
+- postgres (postgres:17 image is used without additional modules)
+- scheduler (to run cron tasks in the system)
+- worker (to run jobs). [Laravel Horizon](https://laravel.com/docs/11.x/horizon) must be installed
 
-### Для запуска сборки необходимо выполнить следующую команду
+### To run the build (rebuild), you must run the following command
 docker-compose -f docker-compose-dev.yml up --force-recreate --build
 
-### Для восстановления архива из файла sql в базу данных необходима следующая команда
-cat <имя_файла>.sql | docker exec -i <название_postgres_контейнера> psql -U postgres
+### To restore the archive from the sql file to the database, you must use the following command
+cat <file_name>.sql | docker exec -i <postgres_container_name> psql -U postgres
 
-### Для сохранения архива базы данных в файл sql необходима следующая команда
-docker exec -t <название_postgres_контейнера> pg_dumpall -c -U postgres > dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+### Or
+docker exec -i <postgres_container_name> pg_restore --verbose --clean --no-acl --no-owner -U postgres -d postgres < <file_name>.sql
 
-### Для сохранения архива базы данных с последующей архивацией необходима следующая команда
-docker exec -t <название_postgres_контейнера> pg_dumpall -c -U postgres | gzip > dump_`date +%d-%m-%Y"_"%H_%M_%S`.gz
 
-### Для входа в контейнер php необходимо выполнить следующую команду
-docker exec -it <название_php_контейнера> /bin/sh
+### To save the database archive to an sql file, the following command is required
+docker exec -t <postgres_container_name> pg_dumpall -c -U postgres > dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
 
-После этого доступно выполнение artisan и composer команд
+### To save the database archive with subsequent archiving, the following command is required
+docker exec -t <postgres_container_name> pg_dumpall -c -U postgres | gzip > dump_`date +%d-%m-%Y"_"%H_%M_%S`.gz
 
-# Перед началом работы
-Сборка использует переменные окружения, которые берутся из .env-файла, поэтому перед началом работы необходимо создать данный файл
+### To enter the php container, you need to run the following command
+docker exec -it <php_container_name> /bin/sh
 
-### После сборки образа необходимо запустить composer для получения сторонних пакетов. 
-docker exec -it <название_php_контейнера> composer --ignore-platform-reqs --no-scripts install
+After that, you can run artisan and composer commands
 
-### И команда для установки только зависимостей для production
-docker exec -it <название_php_контейнера> composer --ignore-platform-reqs --no-scripts install --no-dev
+# Before you start
+The build uses environment variables that are taken from the .env file, so before you start, you need to create this file
 
-# Дополнитель установленные пакеты
-### wkhtmltopdf и набор шрифтов к нему для использования при генерации pdf с помощью пакета [https://github.com/barryvdh/laravel-snappy](https://github.com/barryvdh/laravel-snappy)
+### After building the image, you need to run composer to get third-party packages.
+docker exec -it <php_container_name> composer --ignore-platform-reqs --no-scripts install
+
+### And a command to install only dependencies for production
+docker exec -it <php_container_name> composer --ignore-platform-reqs --no-scripts install --no-dev
+
+# Additional installed packages
+### wkhtmltopdf and a set of fonts for it to use when generating pdf using the package [https://github.com/barryvdh/laravel-snappy](https://github.com/barryvdh/laravel-snappy)
